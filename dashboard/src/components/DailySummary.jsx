@@ -7,6 +7,7 @@ const STATES = [
   { key: "eating_seconds",    label: "Eating",    emoji: "🍽️", color: "#f4845f" },
   { key: "drinking_seconds",  label: "Drinking",  emoji: "💧", color: "#4dabf7" },
   { key: "active_seconds",    label: "Active",    emoji: "🐹", color: "#adb5bd" },
+  { key: "hidden_seconds",    label: "Hidden",    emoji: "🌿", color: "#b5885e" },
 ];
 
 const VISITS = [

@@ -19,6 +19,7 @@ const STATE_COLORS = {
   eating:    "#f4845f",
   drinking:  "#4dabf7",
   active:    "#adb5bd",
+  hidden:    "#b5885e",
   unknown:   "#adb5bd",
 };
 
@@ -28,6 +29,7 @@ const STATE_LABELS = {
   eating:    "Eating 🍽️",
   drinking:  "Drinking 💧",
   active:    "Active 🐹",
+  hidden:    "Hidden 🌿",
   unknown:   "Checking in…",
 };
 

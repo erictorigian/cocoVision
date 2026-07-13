@@ -79,6 +79,8 @@ def zone_for_centroid(centroid: Optional[tuple], zones: dict) -> Optional[str]:
 ACTIVE_STATES = {"exploring", "eating", "drinking", "active"}
 
 def classify_raw(zone: Optional[str], is_moving: bool) -> str:
+    if zone is None:
+        return "hidden"      # not in any defined zone — buried or between zones
     if zone == "food":
         return "eating"
     if zone == "water":
@@ -86,7 +88,7 @@ def classify_raw(zone: Optional[str], is_moving: bool) -> str:
     if zone == "explore" and is_moving:
         return "exploring"
     if not is_moving:
-        return "still"       # resolved to sleeping after threshold
+        return "still"       # in a zone, not moving → sleeping after threshold
     return "active"
 
 
@@ -161,11 +163,12 @@ class ClipWriter:
 # ── Daily summary tracker ─────────────────────────────────────────────────────
 
 _DURATION_COLS = {
-    "sleeping": "sleeping_seconds",
+    "sleeping":  "sleeping_seconds",
     "exploring": "exploring_seconds",
-    "eating": "eating_seconds",
-    "drinking": "drinking_seconds",
-    "active": "active_seconds",
+    "eating":    "eating_seconds",
+    "drinking":  "drinking_seconds",
+    "active":    "active_seconds",
+    "hidden":    "hidden_seconds",
 }
 _VISIT_COLS = {
     "food": "food_visits",

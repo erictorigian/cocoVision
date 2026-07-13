@@ -26,6 +26,7 @@ const STATS = [
   { key: "exploring_seconds", label: "explored", emoji: "🐾", color: "#52b788", unit: "hours" },
   { key: "eating_seconds",    label: "eating",   emoji: "🍽️", color: "#f4845f", unit: "hours" },
   { key: "drinking_seconds",  label: "drinking", emoji: "💧", color: "#4dabf7", unit: "hours" },
+  { key: "hidden_seconds",    label: "hidden",   emoji: "🌿", color: "#b5885e", unit: "hours" },
 ];
 
 const VISITS = [

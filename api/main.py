@@ -103,6 +103,7 @@ def alltime():
         "eating_seconds":    0,
         "drinking_seconds":  0,
         "active_seconds":    0,
+        "hidden_seconds":    0,
         "food_visits":       0,
         "water_visits":      0,
         "hide_visits":       0,
@@ -170,7 +171,7 @@ def _empty_summary(day: str) -> dict:
         "date": day,
         "sleeping_seconds": 0, "exploring_seconds": 0,
         "eating_seconds": 0,   "drinking_seconds": 0,
-        "active_seconds": 0,   "food_visits": 0,
-        "water_visits": 0,     "hide_visits": 0,
-        "explore_visits": 0,
+        "active_seconds": 0,   "hidden_seconds": 0,
+        "food_visits": 0,      "water_visits": 0,
+        "hide_visits": 0,      "explore_visits": 0,
     }

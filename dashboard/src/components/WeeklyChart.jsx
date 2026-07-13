@@ -10,6 +10,7 @@ const BARS = [
   { key: "eating_seconds",    name: "Eating",    color: "#f4845f" },
   { key: "drinking_seconds",  name: "Drinking",  color: "#4dabf7" },
   { key: "active_seconds",    name: "Active",    color: "#adb5bd" },
+  { key: "hidden_seconds",    name: "Hidden",    color: "#b5885e" },
 ];
 
 function shortDay(iso) {
