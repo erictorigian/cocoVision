@@ -30,16 +30,18 @@ function todayLabel() {
 }
 
 export default function DailySummary() {
-  const [data, setData] = useState(null);
+  const [data,  setData]  = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     fetch("/api/daily")
-      .then(r => r.json())
+      .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
       .then(setData)
-      .catch(() => {});
+      .catch(e => setError(e.message));
   }, []);
 
-  if (!data) return <div className="loading">Loading today's data…</div>;
+  if (error) return <div className="empty">Couldn't load today's data (API error: {error}). Check that the api container is running.</div>;
+  if (!data)  return <div className="loading">Loading today's data…</div>;
 
   const pieData = STATES
     .map(s => ({ name: s.label, value: data[s.key] || 0, color: s.color, emoji: s.emoji }))

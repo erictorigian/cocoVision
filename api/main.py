@@ -77,17 +77,15 @@ def daily(day: str):
     except ValueError:
         raise HTTPException(400, "date must be YYYY-MM-DD")
 
-    row = (
+    rows = (
         supabase.table("daily_summaries")
         .select("*")
         .eq("date", day)
-        .maybe_single()
+        .limit(1)
         .execute()
         .data
     )
-    if row is None:
-        return _empty_summary(day)
-    return row
+    return rows[0] if rows else _empty_summary(day)
 
 
 @app.get("/daily")

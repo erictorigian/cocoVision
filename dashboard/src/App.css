@@ -54,6 +54,8 @@ body {
   font-weight: 600;
   color: #fff;
   backdrop-filter: blur(4px);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .status-dot {
