@@ -1,0 +1,106 @@
+version: "3.9"
+
+# ── Shared volumes ────────────────────────────────────────────────────────────
+# coco-clips:     highlight video files (mounted in detector + api)
+# coco-snapshots: current.jpg + status.json (mounted in detector + api)
+#
+# To use a host path instead of a named volume (e.g. for NAS storage), replace:
+#   coco-clips: {}
+# with:
+#   coco-clips:
+#     driver: local
+#     driver_opts:
+#       type: none
+#       o: bind
+#       device: /your/host/path/clips
+
+volumes:
+  coco-clips: {}
+  coco-snapshots: {}
+
+# ── Network ───────────────────────────────────────────────────────────────────
+# All containers share coco-net (internal).
+# dashboard and api also join the homelab network so your reverse proxy
+# (nginx/Caddy) can reach them.
+# Set HOMELAB_NETWORK in .env to match your existing shared network name.
+
+networks:
+  coco-net:
+    driver: bridge
+  homelab:
+    external: true
+    name: ${HOMELAB_NETWORK:-homelab}
+
+# ── Services ──────────────────────────────────────────────────────────────────
+
+services:
+
+  detector:
+    build: ./detector
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      CLIPS_DIR:     /clips
+      SNAPSHOT_PATH: /snapshots/current.jpg
+      STATUS_PATH:   /snapshots/status.json
+      ZONE_CONFIG:   /app/zone_config.json
+    volumes:
+      - coco-clips:/clips
+      - coco-snapshots:/snapshots
+      # zone_config is bind-mounted so you can re-calibrate without rebuilding
+      - ./detector/zone_config.json:/app/zone_config.json
+    networks:
+      - coco-net
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  api:
+    build: ./api
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      CLIPS_DIR:     /clips
+      SNAPSHOT_PATH: /snapshots/current.jpg
+      STATUS_PATH:   /snapshots/status.json
+    volumes:
+      - coco-clips:/clips:ro
+      - coco-snapshots:/snapshots:ro
+    networks:
+      - coco-net
+      - homelab
+    depends_on:
+      - detector
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  dashboard:
+    build: ./dashboard
+    restart: unless-stopped
+    networks:
+      - coco-net
+      - homelab
+    depends_on:
+      - api
+    logging:
+      driver: json-file
+      options: { max-size: "5m", max-file: "2" }
+
+  # ── Calibrator (run on demand) ─────────────────────────────────────────────
+  # Start with:  docker compose --profile calibrate up calibrator
+  # Access at:   http://10.27.27.6:7070
+  # Stop after:  docker compose --profile calibrate down calibrator
+
+  calibrator:
+    build: ./calibrator
+    restart: "no"
+    env_file: .env
+    ports:
+      - "7070:7070"
+    volumes:
+      - ./detector/zone_config.json:/app/zone_config.json
+    networks:
+      - coco-net
+    profiles:
+      - calibrate

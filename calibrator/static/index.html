@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Coco Cam — Zone Calibrator</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #1a1a2e; color: #eee; padding: 20px; }
+  h1 { font-size: 1.4rem; margin-bottom: 4px; color: #a8d8ea; }
+  p.sub { font-size: 0.85rem; color: #888; margin-bottom: 16px; }
+
+  .layout { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
+
+  #canvas-wrap { position: relative; flex-shrink: 0; }
+  canvas { display: block; cursor: crosshair; border: 2px solid #333; border-radius: 4px; }
+
+  .sidebar { flex: 1; min-width: 220px; }
+
+  .zone-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+  .zone-btn {
+    padding: 10px 14px; border: 2px solid #444; border-radius: 6px;
+    background: #16213e; color: #ccc; cursor: pointer; text-align: left;
+    font-size: 0.9rem; transition: all 0.15s;
+  }
+  .zone-btn:hover { border-color: #666; }
+  .zone-btn.active { border-color: var(--color); color: #fff; background: #1e2d4a; }
+  .zone-btn .dot {
+    display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+    background: var(--color); margin-right: 8px;
+  }
+  .zone-btn .pts { font-size: 0.75rem; color: #888; float: right; }
+
+  .instructions {
+    background: #0f3460; border-radius: 6px; padding: 12px;
+    font-size: 0.8rem; line-height: 1.6; margin-bottom: 14px; color: #bcd;
+  }
+
+  .actions { display: flex; flex-direction: column; gap: 8px; }
+  button.action {
+    padding: 10px; border: none; border-radius: 6px;
+    font-size: 0.9rem; cursor: pointer; font-weight: 600;
+  }
+  #btn-refresh  { background: #374151; color: #ccc; }
+  #btn-clear    { background: #7f1d1d; color: #fca5a5; }
+  #btn-save     { background: #14532d; color: #86efac; }
+  #btn-save:hover { background: #166534; }
+
+  #status { margin-top: 10px; font-size: 0.8rem; color: #6ee7b7; min-height: 20px; }
+  #error  { margin-top: 6px;  font-size: 0.8rem; color: #f87171; min-height: 20px; }
+</style>
+</head>
+<body>
+<h1>🐹 Coco Cam — Zone Calibrator</h1>
+<p class="sub">Draw polygons on the camera frame to define Coco's activity zones.</p>
+
+<div class="layout">
+  <div id="canvas-wrap">
+    <canvas id="canvas"></canvas>
+  </div>
+
+  <div class="sidebar">
+    <div class="zone-list" id="zone-list"></div>
+    <div class="instructions">
+      <strong>How to use:</strong><br>
+      1. Select a zone from the list above.<br>
+      2. Click on the image to place polygon points.<br>
+      3. Double-click (or click near first point) to close the polygon.<br>
+      4. Repeat for each zone.<br>
+      5. Click <strong>Save Zones</strong> when done.<br><br>
+      Re-run anytime you rearrange the cage.
+    </div>
+    <div class="actions">
+      <button class="action" id="btn-refresh">↺ Refresh Frame</button>
+      <button class="action" id="btn-clear">✕ Clear Selected Zone</button>
+      <button class="action" id="btn-save">✓ Save Zones</button>
+    </div>
+    <div id="status"></div>
+    <div id="error"></div>
+  </div>
+</div>
+
+<script>
+const ZONE_DEFS = [
+  { name: "hide",    label: "Hide Box",        color: "#8b5cf6", active: true },
+  { name: "food",    label: "Food Bowl",       color: "#f59e0b", active: true },
+  { name: "water",   label: "Water Bottle",    color: "#38bdf8", active: true },
+  { name: "explore", label: "Open / Tunnels",  color: "#34d399", active: true },
+  { name: "wheel",   label: "Wheel (future)",  color: "#94a3b8", active: false },
+];
+
+const canvas  = document.getElementById("canvas");
+const ctx     = canvas.getContext("2d");
+const statusEl = document.getElementById("status");
+const errorEl  = document.getElementById("error");
+
+let img        = new Image();
+let zones      = {};          // name → [[x,y], ...]
+let activeZone = ZONE_DEFS[0].name;
+let drawing    = [];          // points in progress
+let resolution = { width: 640, height: 360 };
+
+// Init zones with empty polygons
+ZONE_DEFS.forEach(z => { zones[z.name] = []; });
+
+function colorFor(name) {
+  return (ZONE_DEFS.find(z => z.name === name) || {}).color || "#fff";
+}
+
+// ── Canvas rendering ─────────────────────────────────────────────────────────
+function draw() {
+  if (!img.width) return;
+  canvas.width  = img.width;
+  canvas.height = img.height;
+  ctx.drawImage(img, 0, 0);
+
+  // Completed zones
+  ZONE_DEFS.forEach(zd => {
+    const poly = zones[zd.name];
+    if (poly.length < 2) return;
+    ctx.beginPath();
+    ctx.moveTo(poly[0][0], poly[0][1]);
+    poly.slice(1).forEach(p => ctx.lineTo(p[0], p[1]));
+    ctx.closePath();
+    ctx.strokeStyle = zd.color;
+    ctx.lineWidth   = zd.name === activeZone ? 2.5 : 1.5;
+    ctx.stroke();
+    ctx.fillStyle   = zd.color + "33";
+    ctx.fill();
+
+    // Label
+    const cx = poly.reduce((s, p) => s + p[0], 0) / poly.length;
+    const cy = poly.reduce((s, p) => s + p[1], 0) / poly.length;
+    ctx.fillStyle   = "#fff";
+    ctx.font        = "bold 12px system-ui";
+    ctx.textAlign   = "center";
+    ctx.fillText(zd.label, cx, cy);
+  });
+
+  // In-progress polygon
+  if (drawing.length > 0) {
+    ctx.beginPath();
+    ctx.moveTo(drawing[0][0], drawing[0][1]);
+    drawing.forEach(p => ctx.lineTo(p[0], p[1]));
+    ctx.strokeStyle = colorFor(activeZone);
+    ctx.lineWidth   = 2;
+    ctx.setLineDash([4, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    drawing.forEach((p, i) => {
+      ctx.beginPath();
+      ctx.arc(p[0], p[1], i === 0 ? 6 : 4, 0, Math.PI * 2);
+      ctx.fillStyle = colorFor(activeZone);
+      ctx.fill();
+    });
+  }
+}
+
+// ── Zone sidebar ──────────────────────────────────────────────────────────────
+function renderSidebar() {
+  const list = document.getElementById("zone-list");
+  list.innerHTML = "";
+  ZONE_DEFS.forEach(zd => {
+    const btn = document.createElement("button");
+    btn.className = "zone-btn" + (zd.name === activeZone ? " active" : "");
+    btn.style.setProperty("--color", zd.color);
+    const pts = zones[zd.name].length;
+    btn.innerHTML = `<span class="dot"></span>${zd.label}<span class="pts">${pts} pts</span>`;
+    btn.onclick = () => {
+      activeZone = zd.name;
+      drawing    = [];
+      renderSidebar();
+      draw();
+    };
+    list.appendChild(btn);
+  });
+}
+
+// ── Canvas interaction ────────────────────────────────────────────────────────
+canvas.addEventListener("click", e => {
+  const r  = canvas.getBoundingClientRect();
+  const sx = canvas.width  / r.width;
+  const sy = canvas.height / r.height;
+  const x  = Math.round((e.clientX - r.left) * sx);
+  const y  = Math.round((e.clientY - r.top)  * sy);
+
+  // Close polygon if clicking near first point
+  if (drawing.length >= 3) {
+    const [fx, fy] = drawing[0];
+    const dist = Math.hypot(x - fx, y - fy);
+    if (dist < 12) {
+      commitPolygon();
+      return;
+    }
+  }
+  drawing.push([x, y]);
+  draw();
+  renderSidebar();
+});
+
+canvas.addEventListener("dblclick", e => {
+  e.preventDefault();
+  if (drawing.length >= 3) commitPolygon();
+});
+
+function commitPolygon() {
+  zones[activeZone] = [...drawing];
+  drawing = [];
+  renderSidebar();
+  draw();
+  setStatus(`${activeZone} zone set (${zones[activeZone].length} points)`);
+}
+
+// ── Load frame ────────────────────────────────────────────────────────────────
+async function loadFrame() {
+  setStatus("Capturing frame…");
+  img     = new Image();
+  img.onload = () => { draw(); setStatus("Frame loaded — draw your zones."); };
+  img.onerror = () => setError("Could not load frame from stream.");
+  img.src = "/frame?t=" + Date.now();
+}
+
+async function loadExistingZones() {
+  try {
+    const r = await fetch("/zones");
+    const data = await r.json();
+    data.forEach(z => { if (z.polygon && z.polygon.length) zones[z.name] = z.polygon; });
+    renderSidebar();
+    draw();
+  } catch (_) {}
+}
+
+// ── Save ──────────────────────────────────────────────────────────────────────
+document.getElementById("btn-save").onclick = async () => {
+  const payload = ZONE_DEFS.map(zd => ({
+    name:    zd.name,
+    active:  zd.active,
+    polygon: zones[zd.name] || [],
+  }));
+  try {
+    setStatus("Saving…");
+    const r = await fetch("/zones", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify(payload),
+    });
+    const res = await r.json();
+    if (res.ok) setStatus(`✓ Zones saved! (${res.saved} zones) — you can close this tab.`);
+    else        setError("Save failed: " + JSON.stringify(res));
+  } catch (err) {
+    setError("Save error: " + err.message);
+  }
+};
+
+document.getElementById("btn-refresh").onclick = () => { drawing = []; loadFrame(); };
+document.getElementById("btn-clear").onclick   = () => {
+  zones[activeZone] = [];
+  drawing = [];
+  renderSidebar();
+  draw();
+  setStatus(`${activeZone} zone cleared`);
+};
+
+function setStatus(msg) { statusEl.textContent = msg; errorEl.textContent = ""; }
+function setError(msg)  { errorEl.textContent  = msg; statusEl.textContent = ""; }
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+renderSidebar();
+loadFrame().then(loadExistingZones);
+</script>
+</body>
+</html>

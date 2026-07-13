@@ -1,0 +1,251 @@
+/* ── Reset & base ──────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --sleep:   #7c6fcd;
+  --explore: #52b788;
+  --eat:     #f4845f;
+  --drink:   #4dabf7;
+  --active:  #adb5bd;
+  --bg:      #fdf8f0;
+  --card:    #ffffff;
+  --text:    #2d2d2d;
+  --muted:   #888;
+  --border:  #e8e0d5;
+  --accent:  #f0a500;
+  --radius:  14px;
+  --shadow:  0 2px 12px rgba(0,0,0,0.07);
+}
+
+body {
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────────── */
+.header {
+  background: linear-gradient(135deg, #ff6b9d 0%, #ff8e53 50%, #ffd93d 100%);
+  padding: 18px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+
+.header h1 {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.status-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,0.25);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #fff;
+  backdrop-filter: blur(4px);
+}
+
+.status-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: #fff;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+/* ── Tabs ────────────────────────────────────────────────────────────────────── */
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 12px 24px 0;
+  border-bottom: 2px solid var(--border);
+  background: var(--card);
+  overflow-x: auto;
+}
+
+.tab {
+  padding: 10px 20px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--muted);
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  transition: color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.tab:hover { color: var(--text); }
+.tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+/* ── Main content ────────────────────────────────────────────────────────────── */
+.content { padding: 24px; max-width: 900px; margin: 0 auto; }
+
+/* ── Stat cards ──────────────────────────────────────────────────────────────── */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 18px 16px;
+  box-shadow: var(--shadow);
+  border-top: 4px solid var(--c, #ccc);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-card .emoji { font-size: 1.8rem; line-height: 1; }
+.stat-card .label { font-size: 0.75rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 4px; }
+.stat-card .value { font-size: 1.5rem; font-weight: 800; color: var(--text); line-height: 1.1; }
+.stat-card .sub   { font-size: 0.8rem; color: var(--muted); }
+
+/* ── Section headers ─────────────────────────────────────────────────────────── */
+.section-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 14px;
+}
+
+/* ── Chart container ─────────────────────────────────────────────────────────── */
+.chart-wrap {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow);
+  margin-bottom: 24px;
+}
+
+/* ── Big number blocks (all-time) ────────────────────────────────────────────── */
+.alltime-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.alltime-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 22px 20px;
+  box-shadow: var(--shadow);
+  border-left: 5px solid var(--c, #ccc);
+}
+
+.alltime-card .emoji { font-size: 2.2rem; }
+.alltime-card .big   { font-size: 2.4rem; font-weight: 900; color: var(--text); line-height: 1; margin: 8px 0 4px; }
+.alltime-card .desc  { font-size: 0.85rem; font-weight: 600; color: var(--text); }
+.alltime-card .fun   { font-size: 0.78rem; color: var(--muted); margin-top: 4px; }
+
+/* ── Live view ───────────────────────────────────────────────────────────────── */
+.live-wrap {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+
+.live-img {
+  width: 100%;
+  max-width: 640px;
+  border-radius: 10px;
+  border: 2px solid var(--border);
+  display: block;
+  margin: 0 auto 14px;
+}
+
+.live-state {
+  display: inline-block;
+  padding: 8px 22px;
+  border-radius: 999px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--c, #aaa);
+  margin-bottom: 6px;
+}
+
+.live-duration { font-size: 0.9rem; color: var(--muted); }
+
+/* ── Clips gallery ───────────────────────────────────────────────────────────── */
+.clips-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+}
+
+.clip-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.clip-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.1); }
+
+.clip-thumb {
+  width: 100%;
+  aspect-ratio: 16/9;
+  background: #111;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+}
+
+.clip-info { padding: 10px 12px; }
+.clip-info .clip-zone { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--muted); }
+.clip-info .clip-time { font-size: 0.85rem; font-weight: 600; color: var(--text); margin: 2px 0; }
+.clip-info .clip-dur  { font-size: 0.78rem; color: var(--muted); }
+
+/* ── Video modal ─────────────────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.85);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-inner { position: relative; width: 100%; max-width: 700px; }
+.modal-inner video { width: 100%; border-radius: 10px; }
+.modal-close {
+  position: absolute; top: -36px; right: 0;
+  background: none; border: none; color: #fff;
+  font-size: 1.4rem; cursor: pointer; font-weight: 700;
+}
+
+/* ── Empty / loading states ──────────────────────────────────────────────────── */
+.empty { text-align: center; padding: 40px; color: var(--muted); font-size: 1rem; }
+.loading { text-align: center; padding: 40px; color: var(--muted); }

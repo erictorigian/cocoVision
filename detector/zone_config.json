@@ -1,0 +1,7 @@
+[
+  {"name": "hide",    "active": true,  "polygon": []},
+  {"name": "food",    "active": true,  "polygon": []},
+  {"name": "water",   "active": true,  "polygon": []},
+  {"name": "explore", "active": true,  "polygon": []},
+  {"name": "wheel",   "active": false, "polygon": []}
+]
