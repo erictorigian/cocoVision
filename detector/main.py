@@ -184,9 +184,8 @@ class SummaryTracker:
         self._today = date.today()
         self._dur = {k: 0 for k in _DURATION_COLS}
         self._vis = {k: 0 for k in _VISIT_COLS}
-        self._last_flush = time.monotonic()
 
-    def record(self, prev_state: str, zone: Optional[str], duration_secs: int):
+    def _rollover(self):
         today = date.today()
         if today != self._today:
             self._flush()
@@ -194,14 +193,14 @@ class SummaryTracker:
             self._dur = {k: 0 for k in _DURATION_COLS}
             self._vis = {k: 0 for k in _VISIT_COLS}
 
-        if prev_state in _DURATION_COLS:
-            self._dur[prev_state] += duration_secs
-        if zone in _VISIT_COLS:
+    def accumulate(self, state: str, zone: Optional[str], elapsed_secs: int, visit: bool = False):
+        """Add elapsed time for state; optionally count a zone visit. Always flushes."""
+        self._rollover()
+        if state in _DURATION_COLS:
+            self._dur[state] += elapsed_secs
+        if visit and zone in _VISIT_COLS:
             self._vis[zone] = self._vis.get(zone, 0) + 1
-
-        if time.monotonic() - self._last_flush > 60:
-            self._flush()
-            self._last_flush = time.monotonic()
+        self._flush()
 
     def _flush(self):
         row = {
@@ -267,6 +266,10 @@ def main():
     candidate_since  = time.monotonic()
     state_since      = time.monotonic()
     current_zone: Optional[str] = None
+
+    # Periodic summary tick — accumulate current state every 60s without needing a transition
+    TICK_INTERVAL = 60.0
+    last_tick     = time.monotonic()
 
     # Clip post-recording
     clip_frames:       list          = []
@@ -379,6 +382,13 @@ def main():
             }
             STATUS_PATH.write_text(json.dumps(status))
 
+            # Periodic summary tick — flush current state time without waiting for a transition
+            tick_now = time.monotonic()
+            if tick_now - last_tick >= TICK_INTERVAL:
+                elapsed = int(tick_now - last_tick)
+                summary.accumulate(current_state, current_zone, elapsed)
+                last_tick = tick_now
+
             # State transition handling
             if new_state != current_state:
                 duration_secs = int(state_age)
@@ -394,7 +404,10 @@ def main():
                 except Exception as exc:
                     log.error(f"Event insert error: {exc}")
 
-                summary.record(current_state, current_zone, duration_secs)
+                # Accumulate only time since the last tick (rest was already flushed)
+                transition_now = time.monotonic()
+                summary.accumulate(current_state, current_zone, int(transition_now - last_tick), visit=True)
+                last_tick = transition_now
 
                 # Wake-up: sleeping → active
                 if was_sleeping and new_state in ACTIVE_STATES:
