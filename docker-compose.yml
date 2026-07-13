@@ -18,18 +18,9 @@ volumes:
   coco-clips: {}
   coco-snapshots: {}
 
-# ── Network ───────────────────────────────────────────────────────────────────
-# All containers share coco-net (internal).
-# dashboard and api also join the homelab network so your reverse proxy
-# (nginx/Caddy) can reach them.
-# Set HOMELAB_NETWORK in .env to match your existing shared network name.
-
 networks:
   coco-net:
     driver: bridge
-  homelab:
-    external: true
-    name: ${HOMELAB_NETWORK:-homelab}
 
 # ── Services ──────────────────────────────────────────────────────────────────
 
@@ -68,7 +59,6 @@ services:
       - coco-snapshots:/snapshots:ro
     networks:
       - coco-net
-      - homelab
     depends_on:
       - detector
     logging:
@@ -78,9 +68,10 @@ services:
   dashboard:
     build: ./dashboard
     restart: unless-stopped
+    ports:
+      - "3000:80"
     networks:
       - coco-net
-      - homelab
     depends_on:
       - api
     logging:
