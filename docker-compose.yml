@@ -69,7 +69,7 @@ services:
     build: ./dashboard
     restart: unless-stopped
     ports:
-      - "3000:80"
+      - "4242:80"
     networks:
       - coco-net
     depends_on:
